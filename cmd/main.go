@@ -2,23 +2,38 @@ package main
 
 import (
 	"fmt"
+	"github.com/joho/godotenv"
 	"go-mongodb/controller"
 	"go-mongodb/database"
 	"go-mongodb/router"
 	"log"
 	"net/http"
+	"os"
 	"time"
 )
 
-const port = 8080
-
 func main() {
 
-	database, err := database.NewDatabase()
+	err := godotenv.Load(".env")
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	// Load enviroment variable
+	port := os.Getenv("SERVER_PORT")
+	databaseURL := os.Getenv("DATABASE_URL")
+
+	database, err := database.NewDatabase(databaseURL)
 	if err != nil {
 		log.Fatalf("Connect database error: %v", err)
 	}
 	defer database.Close()
+
+	if err := database.Ping(); err != nil {
+		log.Fatalf("Can't connect to database: %v", err)
+	} else {
+		fmt.Println("Connect to database successfully")
+	}
 
 	repository := controller.NewRepository(database)
 	handler := controller.NewHandler(repository)

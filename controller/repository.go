@@ -18,7 +18,7 @@ func NewRepository(db *database.Database) model.Repository {
 }
 
 func (r *repository) ListAllAuthor() ([]model.Author, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel()
 	var authors []model.Author
 	collection := r.db.Client.Database("go-mongodb").Collection("author")
@@ -39,11 +39,12 @@ func (r *repository) ListAllAuthor() ([]model.Author, error) {
 	if err = cur.Err(); err != nil {
 		return []model.Author{}, err
 	}
+
 	return authors, nil
 }
 
 func (r *repository) GetAuthorDetail(id string) (*model.Author, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel()
 	objectID, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
@@ -62,13 +63,14 @@ func (r *repository) GetAuthorDetail(id string) (*model.Author, error) {
 }
 
 func (r *repository) InsertAuthor(author *model.AuthorWrite) (*model.Author, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel()
 	collection := r.db.Client.Database("go-mongodb").Collection("author")
 	res, err := collection.InsertOne(ctx, author)
 	if err != nil {
 		return &model.Author{}, nil
 	}
+
 	return &model.Author{
 		ID:        res.InsertedID,
 		FirstName: author.FirstName,
@@ -78,12 +80,13 @@ func (r *repository) InsertAuthor(author *model.AuthorWrite) (*model.Author, err
 }
 
 func (r *repository) UpdateAuthor(id string, authorWrite model.AuthorWrite) (*model.Author, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel()
 	objectID, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
 		return &model.Author{}, err
 	}
+
 	collection := r.db.Client.Database("go-mongodb").Collection("author")
 	updateQuery := bson.D{{"$set", bson.D{
 		{"first_name", authorWrite.FirstName},
@@ -94,11 +97,12 @@ func (r *repository) UpdateAuthor(id string, authorWrite model.AuthorWrite) (*mo
 	if err != nil {
 		return &model.Author{}, nil
 	}
+
 	return r.GetAuthorDetail(id)
 }
 
 func (r *repository) Delete(id string) error {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel()
 	objectID, err := primitive.ObjectIDFromHex(id)
 	if err != nil {

@@ -21,7 +21,21 @@ func main() {
 
 	// Load enviroment variable
 	port := os.Getenv("SERVER_PORT")
-	databaseURL := os.Getenv("DATABASE_URL")
+	DB_HOST := os.Getenv("DB_HOST")
+	DB_PORT := os.Getenv("DB_PORT")
+	DB_TYPE := os.Getenv("DB")
+	DB_USER := os.Getenv("USER_DB")
+	DB_PASS := os.Getenv("PASS_DB")
+
+	var certificate string
+	if DB_USER != "" {
+		certificate = fmt.Sprintf("%v:%v@", DB_USER, DB_PASS)
+	} else {
+		certificate = ""
+	}
+
+	databaseURL := fmt.Sprintf("%v://%v%v:%v", DB_TYPE, certificate, DB_HOST, DB_PORT)
+	fmt.Println(databaseURL)
 
 	database, err := database.NewDatabase(databaseURL)
 	if err != nil {

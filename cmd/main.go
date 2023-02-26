@@ -3,8 +3,9 @@ package main
 import (
 	"fmt"
 	"github.com/joho/godotenv"
-	"go-mongodb/controller"
 	"go-mongodb/database"
+	"go-mongodb/handler"
+	"go-mongodb/repository"
 	"go-mongodb/router"
 	"log"
 	"net/http"
@@ -35,7 +36,6 @@ func main() {
 	}
 
 	databaseURL := fmt.Sprintf("%v://%v%v:%v", DB_TYPE, certificate, DB_HOST, DB_PORT)
-	fmt.Println(databaseURL)
 
 	database, err := database.NewDatabase(databaseURL)
 	if err != nil {
@@ -49,9 +49,13 @@ func main() {
 		fmt.Println("Connect to database successfully")
 	}
 
-	repository := controller.NewRepository(database)
-	handler := controller.NewHandler(repository)
-	r := router.NewRouter(handler)
+	authorRepository := repository.NewAuthorRepository(database)
+	documentRepository := repository.NewDocumentRepository(database)
+
+	authorhandler := handler.NewAuthorHandler(authorRepository)
+	documentHandler := handler.NewDocumentHandler(documentRepository)
+
+	r := router.NewRouter(authorhandler, documentHandler)
 
 	serv := &http.Server{
 		Handler:      r,

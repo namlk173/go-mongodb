@@ -1,4 +1,4 @@
-package controller
+package repository
 
 import (
 	"context"
@@ -9,15 +9,15 @@ import (
 	"time"
 )
 
-type repository struct {
+type authorRepository struct {
 	db *database.Database
 }
 
-func NewRepository(db *database.Database) model.Repository {
-	return &repository{db: db}
+func NewAuthorRepository(db *database.Database) model.AuthorRepository {
+	return &authorRepository{db: db}
 }
 
-func (r *repository) ListAllAuthor() ([]model.Author, error) {
+func (r *authorRepository) ListAllAuthor() ([]model.Author, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel()
 	var authors []model.Author
@@ -43,7 +43,7 @@ func (r *repository) ListAllAuthor() ([]model.Author, error) {
 	return authors, nil
 }
 
-func (r *repository) GetAuthorDetail(id string) (*model.Author, error) {
+func (r *authorRepository) GetAuthorDetail(id string) (*model.Author, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel()
 	objectID, err := primitive.ObjectIDFromHex(id)
@@ -62,7 +62,7 @@ func (r *repository) GetAuthorDetail(id string) (*model.Author, error) {
 	return &author, nil
 }
 
-func (r *repository) InsertAuthor(author *model.AuthorWrite) (*model.Author, error) {
+func (r *authorRepository) InsertAuthor(author *model.AuthorWrite) (*model.Author, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel()
 	collection := r.db.Client.Database("go-mongodb").Collection("author")
@@ -79,7 +79,7 @@ func (r *repository) InsertAuthor(author *model.AuthorWrite) (*model.Author, err
 	}, nil
 }
 
-func (r *repository) UpdateAuthor(id string, authorWrite model.AuthorWrite) (*model.Author, error) {
+func (r *authorRepository) UpdateAuthor(id string, authorWrite model.AuthorWrite) (*model.Author, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel()
 	objectID, err := primitive.ObjectIDFromHex(id)
@@ -101,7 +101,7 @@ func (r *repository) UpdateAuthor(id string, authorWrite model.AuthorWrite) (*mo
 	return r.GetAuthorDetail(id)
 }
 
-func (r *repository) Delete(id string) error {
+func (r *authorRepository) DeleteAuthor(id string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel()
 	objectID, err := primitive.ObjectIDFromHex(id)

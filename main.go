@@ -21,12 +21,14 @@ func main() {
 	}
 
 	// Load enviroment variable
-	port := os.Getenv("SERVER_PORT")
-	DB_HOST := os.Getenv("DB_HOST")
-	DB_PORT := os.Getenv("DB_PORT")
-	DB_TYPE := os.Getenv("DB")
-	DB_USER := os.Getenv("USER_DB")
-	DB_PASS := os.Getenv("PASS_DB")
+	var (
+		port    = os.Getenv("SERVER_PORT")
+		DB_HOST = os.Getenv("DB_HOST")
+		DB_PORT = os.Getenv("DB_PORT")
+		DB_TYPE = os.Getenv("DB")
+		DB_USER = os.Getenv("USER_DB")
+		DB_PASS = os.Getenv("PASS_DB")
+	)
 
 	var certificate string
 	if DB_USER != "" {
@@ -52,10 +54,10 @@ func main() {
 	authorRepository := repository.NewAuthorRepository(db)
 	documentRepository := repository.NewDocumentRepository(db)
 
-	authorhandler := handler.NewAuthorHandler(authorRepository)
+	authorHandler := handler.NewAuthorHandler(authorRepository)
 	documentHandler := handler.NewDocumentHandler(documentRepository)
 
-	r := router.NewRouter(authorhandler, documentHandler)
+	r := router.NewRouter(authorHandler, documentHandler)
 
 	serv := &http.Server{
 		Handler:      r,

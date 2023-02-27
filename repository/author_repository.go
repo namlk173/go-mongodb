@@ -28,14 +28,19 @@ func (r *authorRepository) ListAllAuthor() ([]model.Author, error) {
 	}
 	defer cur.Close(ctx)
 
-	for cur.Next(ctx) {
-		var author model.Author
-		err = cur.Decode(&author)
-		if err != nil {
-			return []model.Author{}, err
-		}
-		authors = append(authors, author)
+	//for cur.Next(ctx) {
+	//	var author model.Author
+	//	err = cur.Decode(&author)
+	//	if err != nil {
+	//		return []model.Author{}, err
+	//	}
+	//	authors = append(authors, author)
+	//}
+
+	if err = cur.All(ctx, &authors); err != nil {
+		return []model.Author{}, err
 	}
+
 	if err = cur.Err(); err != nil {
 		return []model.Author{}, err
 	}

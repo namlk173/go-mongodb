@@ -27,13 +27,17 @@ func (d *documentRepository) ListAllDocument() ([]model.Document, error) {
 	}
 	defer cur.Close(ctx)
 
-	for cur.Next(ctx) {
-		var document model.Document
-		err := cur.Decode(&document)
-		if err != nil {
-			return []model.Document{}, err
-		}
-		documents = append(documents, document)
+	//for cur.Next(ctx) {
+	//	var document model.Document
+	//	err := cur.Decode(&document)
+	//	if err != nil {
+	//		return []model.Document{}, err
+	//	}
+	//	documents = append(documents, document)
+	//}
+
+	if err = cur.All(ctx, &documents); err != nil {
+		return []model.Document{}, err
 	}
 
 	if cur.Err() != nil {

@@ -37,20 +37,20 @@ func main() {
 
 	databaseURL := fmt.Sprintf("%v://%v%v:%v", DB_TYPE, certificate, DB_HOST, DB_PORT)
 
-	database, err := database.NewDatabase(databaseURL)
+	db, err := database.NewDatabase(databaseURL)
 	if err != nil {
 		log.Fatalf("Connect database error: %v", err)
 	}
-	defer database.Close()
+	defer db.Close()
 
-	if err := database.Ping(); err != nil {
+	if err := db.Ping(); err != nil {
 		log.Fatalf("Can't connect to database: %v", err)
 	} else {
 		fmt.Println("Connect to database successfully")
 	}
 
-	authorRepository := repository.NewAuthorRepository(database)
-	documentRepository := repository.NewDocumentRepository(database)
+	authorRepository := repository.NewAuthorRepository(db)
+	documentRepository := repository.NewDocumentRepository(db)
 
 	authorhandler := handler.NewAuthorHandler(authorRepository)
 	documentHandler := handler.NewDocumentHandler(documentRepository)

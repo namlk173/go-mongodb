@@ -16,9 +16,9 @@ type AuthorWrite struct {
 type (
 	AuthorRepository interface {
 		ListAllAuthor() ([]Author, error)
-		GetAuthorDetail(id string) (*Author, error)
+		GetAuthorDetail(objectID interface{}) (*Author, error)
 		InsertAuthor(author *AuthorWrite) (*Author, error)
-		UpdateAuthor(id string, authorWrite AuthorWrite) (*Author, error)
-		DeleteAuthor(id string) error
+		UpdateAuthor(author *Author) error
+		DeleteAuthor(objectID interface{}) error
 	}
 )

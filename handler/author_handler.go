@@ -3,6 +3,7 @@ package handler
 import (
 	"encoding/json"
 	"go-mongodb/model"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"net/http"
 )
 
@@ -16,10 +17,15 @@ func NewAuthorHandler(r model.AuthorRepository) *AuthorHandler {
 	}
 }
 
-func (h *AuthorHandler) ListAllAuthor(w http.ResponseWriter, r *http.Request) {
+func (h *AuthorHandler) ListAllAuthor(w http.ResponseWriter, _ *http.Request) {
 	authors, err := h.AuthorRepository.ListAllAuthor()
+	if authors == nil {
+		ResponseWithJSON(w, http.StatusNotFound, map[string]string{"error": "no author available"})
+		return
+	}
+
 	if err != nil {
-		ResponseWithJSON(w, http.StatusInternalServerError, map[string]string{"error": "no author available"})
+		ResponseWithJSON(w, http.StatusInternalServerError, map[string]string{"error": "server error"})
 		return
 	}
 
@@ -28,9 +34,15 @@ func (h *AuthorHandler) ListAllAuthor(w http.ResponseWriter, r *http.Request) {
 
 func (h *AuthorHandler) GetAuthorDetail(w http.ResponseWriter, r *http.Request) {
 	id := r.URL.Query().Get("id")
-	author, err := h.AuthorRepository.GetAuthorDetail(id)
+	objectID, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
-		ResponseWithJSON(w, http.StatusNotFound, map[string]string{"error": "not found author"})
+		ResponseWithJSON(w, http.StatusBadRequest, map[string]string{"error": "id not true"})
+		return
+	}
+
+	author, err := h.AuthorRepository.GetAuthorDetail(objectID)
+	if err != nil {
+		ResponseWithJSON(w, http.StatusNotFound, map[string]string{"error": "author not found"})
 		return
 	}
 
@@ -54,26 +66,44 @@ func (h *AuthorHandler) InsertAuthor(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *AuthorHandler) UpdateAuthor(w http.ResponseWriter, r *http.Request) {
-	var authorWrite model.AuthorWrite
-	err := json.NewDecoder(r.Body).Decode(&authorWrite)
+	id := r.URL.Query().Get("id")
+	objectID, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		ResponseWithJSON(w, http.StatusBadRequest, map[string]error{"error": err})
+		return
+	}
+
+	_, err = h.AuthorRepository.GetAuthorDetail(objectID)
+	if err != nil {
+		ResponseWithJSON(w, http.StatusNotFound, map[string]string{"error": "author not found"})
+		return
+	}
+
+	var author model.Author
+	err = json.NewDecoder(r.Body).Decode(&author)
 	if err != nil {
 		ResponseWithJSON(w, http.StatusBadRequest, map[string]interface{}{"error": "fail to decode author"})
 		return
 	}
 
-	id := r.URL.Query().Get("id")
-	author, err := h.AuthorRepository.UpdateAuthor(id, authorWrite)
+	author.ID = objectID
+	err = h.AuthorRepository.UpdateAuthor(&author)
 	if err != nil {
-		ResponseWithJSON(w, http.StatusNotFound, map[string]interface{}{"error": "not found author"})
+		ResponseWithJSON(w, http.StatusInternalServerError, map[string]error{"error": err})
 		return
 	}
 
-	ResponseWithJSON(w, http.StatusOK, author)
+	ResponseWithJSON(w, http.StatusAccepted, author)
 }
 
 func (h *AuthorHandler) DeleteAuthor(w http.ResponseWriter, r *http.Request) {
 	id := r.URL.Query().Get("id")
-	err := h.AuthorRepository.DeleteAuthor(id)
+	objectID, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		ResponseWithJSON(w, http.StatusBadRequest, map[string]string{"error": "id not true"})
+	}
+
+	err = h.AuthorRepository.DeleteAuthor(objectID)
 	if err != nil {
 		ResponseWithJSON(w, http.StatusNotFound, map[string]interface{}{"error": "not found author"})
 		return
@@ -82,13 +112,6 @@ func (h *AuthorHandler) DeleteAuthor(w http.ResponseWriter, r *http.Request) {
 	ResponseWithJSON(w, http.StatusOK, map[string]string{"message": "delete author successfully"})
 }
 
-func ResponseWithJSON(w http.ResponseWriter, code int, data interface{}) {
-	response, _ := json.Marshal(data)
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(code)
-	w.Write(response)
-}
-
-func (h *AuthorHandler) WriteMessage(w http.ResponseWriter, r *http.Request) {
-	w.Write([]byte("Hello world"))
+func (h *AuthorHandler) WriteMessage(w http.ResponseWriter, _ *http.Request) {
+	_, _ = w.Write([]byte("Hello world"))
 }

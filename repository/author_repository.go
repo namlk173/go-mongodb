@@ -5,7 +5,6 @@ import (
 	"go-mongodb/database"
 	"go-mongodb/model"
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 	"time"
 )
 
@@ -20,6 +19,7 @@ func NewAuthorRepository(db *database.Database) model.AuthorRepository {
 func (r *authorRepository) ListAllAuthor() ([]model.Author, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel()
+
 	var authors []model.Author
 	collection := r.db.Client.Database("go-mongodb").Collection("author")
 	cur, err := collection.Find(ctx, bson.D{})
@@ -43,20 +43,16 @@ func (r *authorRepository) ListAllAuthor() ([]model.Author, error) {
 	return authors, nil
 }
 
-func (r *authorRepository) GetAuthorDetail(id string) (*model.Author, error) {
+func (r *authorRepository) GetAuthorDetail(objectID interface{}) (*model.Author, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel()
-	objectID, err := primitive.ObjectIDFromHex(id)
-	if err != nil {
-		return &model.Author{}, err
-	}
 
 	collection := r.db.Client.Database("go-mongodb").Collection("author")
 	var author model.Author
 	filter := bson.M{"_id": objectID}
-	err = collection.FindOne(ctx, filter).Decode(&author)
+	err := collection.FindOne(ctx, filter).Decode(&author)
 	if err != nil {
-		return &model.Author{}, nil
+		return &model.Author{}, err
 	}
 
 	return &author, nil
@@ -65,6 +61,7 @@ func (r *authorRepository) GetAuthorDetail(id string) (*model.Author, error) {
 func (r *authorRepository) InsertAuthor(author *model.AuthorWrite) (*model.Author, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel()
+
 	collection := r.db.Client.Database("go-mongodb").Collection("author")
 	res, err := collection.InsertOne(ctx, author)
 	if err != nil {
@@ -79,39 +76,27 @@ func (r *authorRepository) InsertAuthor(author *model.AuthorWrite) (*model.Autho
 	}, nil
 }
 
-func (r *authorRepository) UpdateAuthor(id string, authorWrite model.AuthorWrite) (*model.Author, error) {
+func (r *authorRepository) UpdateAuthor(author *model.Author) error {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel()
-	objectID, err := primitive.ObjectIDFromHex(id)
-	if err != nil {
-		return &model.Author{}, err
-	}
 
 	collection := r.db.Client.Database("go-mongodb").Collection("author")
-	updateQuery := bson.D{{"$set", bson.D{
-		{"first_name", authorWrite.FirstName},
-		{"last_name", authorWrite.LastName},
-		{"address", authorWrite.Address},
-	}}}
-	_, err = collection.UpdateByID(ctx, objectID, updateQuery)
-	if err != nil {
-		return &model.Author{}, nil
-	}
-
-	return r.GetAuthorDetail(id)
-}
-
-func (r *authorRepository) DeleteAuthor(id string) error {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
-	defer cancel()
-	objectID, err := primitive.ObjectIDFromHex(id)
+	filter := bson.M{"_id": author.ID}
+	_, err := collection.ReplaceOne(ctx, filter, author)
 	if err != nil {
 		return err
 	}
 
+	return nil
+}
+
+func (r *authorRepository) DeleteAuthor(objectID interface{}) error {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+	defer cancel()
+
 	collection := r.db.Client.Database("go-mongodb").Collection("author")
 	filter := bson.M{"_id": objectID}
-	_, err = collection.DeleteOne(ctx, filter)
+	_, err := collection.DeleteOne(ctx, filter)
 	if err != nil {
 		return err
 	}

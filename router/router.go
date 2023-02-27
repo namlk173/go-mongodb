@@ -15,6 +15,10 @@ func NewRouter(authorHandler *handler.AuthorHandler, documentHandler *handler.Do
 	r.HandleFunc("/author", authorHandler.UpdateAuthor).Methods("PUT", "PATCH")
 	r.HandleFunc("/author", authorHandler.DeleteAuthor).Methods("DELETE")
 
-	r.HandleFunc("/document", documentHandler.WriteMessage).Methods("GET")
+	r.HandleFunc("/documents", documentHandler.ListAllDocument).Methods("GET")
+	r.HandleFunc("/document", documentHandler.GetDocumentDetail).Methods("GET")
+	r.HandleFunc("/document", documentHandler.InsertDocument).Methods("POST")
+	r.HandleFunc("/document", documentHandler.UpdateDocument).Methods("PUT", "PATCH")
+	r.HandleFunc("/document", documentHandler.DeleteDocument).Methods("DELETE")
 	return r
 }

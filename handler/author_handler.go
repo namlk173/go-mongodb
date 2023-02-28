@@ -5,6 +5,7 @@ import (
 	"go-mongodb/model"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"net/http"
+	"strconv"
 )
 
 type AuthorHandler struct {
@@ -17,8 +18,21 @@ func NewAuthorHandler(r model.AuthorRepository) *AuthorHandler {
 	}
 }
 
-func (h *AuthorHandler) ListAllAuthor(w http.ResponseWriter, _ *http.Request) {
-	authors, err := h.AuthorRepository.ListAllAuthor()
+func (h *AuthorHandler) ListAllAuthor(w http.ResponseWriter, r *http.Request) {
+	skipStr, limitStr := r.URL.Query().Get("skip"), r.URL.Query().Get("limit")
+	skip, err := strconv.Atoi(skipStr)
+	if err != nil {
+		ResponseWithJSON(w, http.StatusBadRequest, map[string]error{"error": err})
+		return
+	}
+
+	limit, err := strconv.Atoi(limitStr)
+	if err != nil {
+		ResponseWithJSON(w, http.StatusBadRequest, map[string]error{"error": err})
+		return
+	}
+
+	authors, err := h.AuthorRepository.ListAllAuthor(int64(skip), int64(limit))
 	if authors == nil {
 		ResponseWithJSON(w, http.StatusNotFound, map[string]string{"error": "no author available"})
 		return
@@ -38,11 +52,12 @@ func (h *AuthorHandler) GetAuthorDetail(w http.ResponseWriter, r *http.Request) 
 	if err != nil {
 		ResponseWithJSON(w, http.StatusBadRequest, map[string]string{"error": "id not true"})
 		return
+
 	}
 
 	author, err := h.AuthorRepository.GetAuthorDetail(objectID)
 	if err != nil {
-		ResponseWithJSON(w, http.StatusNotFound, map[string]string{"error": "author not found"})
+		ResponseWithJSON(w, http.StatusNotFound, map[string]string{"error": "author not found or be deleted"})
 		return
 	}
 
@@ -56,13 +71,14 @@ func (h *AuthorHandler) InsertAuthor(w http.ResponseWriter, r *http.Request) {
 		ResponseWithJSON(w, http.StatusBadRequest, map[string]string{"error": "have some field not valid"})
 		return
 	}
-	author, err := h.AuthorRepository.InsertAuthor(&authorWrite)
+	authorWrite.IsDeleted = false
+	objectID, err := h.AuthorRepository.InsertAuthor(&authorWrite)
 	if err != nil {
 		ResponseWithJSON(w, http.StatusBadRequest, map[string]string{"error": "fail to insert author"})
 		return
 	}
 
-	ResponseWithJSON(w, http.StatusCreated, &author)
+	ResponseWithJSON(w, http.StatusCreated, map[string]interface{}{"_id": objectID})
 }
 
 func (h *AuthorHandler) UpdateAuthor(w http.ResponseWriter, r *http.Request) {

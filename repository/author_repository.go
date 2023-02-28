@@ -5,6 +5,8 @@ import (
 	"go-mongodb/database"
 	"go-mongodb/model"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo/options"
 	"time"
 )
 
@@ -16,26 +18,18 @@ func NewAuthorRepository(db *database.Database) model.AuthorRepository {
 	return &authorRepository{db: db}
 }
 
-func (r *authorRepository) ListAllAuthor() ([]model.Author, error) {
+func (r *authorRepository) ListAllAuthor(skip, limit int64) ([]model.Author, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel()
 
 	var authors []model.Author
 	collection := r.db.Client.Database("go-mongodb").Collection("author")
-	cur, err := collection.Find(ctx, bson.D{})
+	opt := options.Find().SetLimit(limit).SetSkip(skip)
+	cur, err := collection.Find(ctx, bson.D{{"is_deleted", false}}, opt)
 	if err != nil {
 		return []model.Author{}, err
 	}
 	defer cur.Close(ctx)
-
-	//for cur.Next(ctx) {
-	//	var author model.Author
-	//	err = cur.Decode(&author)
-	//	if err != nil {
-	//		return []model.Author{}, err
-	//	}
-	//	authors = append(authors, author)
-	//}
 
 	if err = cur.All(ctx, &authors); err != nil {
 		return []model.Author{}, err
@@ -54,7 +48,7 @@ func (r *authorRepository) GetAuthorDetail(objectID interface{}) (*model.Author,
 
 	collection := r.db.Client.Database("go-mongodb").Collection("author")
 	var author model.Author
-	filter := bson.M{"_id": objectID}
+	filter := bson.M{"_id": objectID, "is_deleted": false}
 	err := collection.FindOne(ctx, filter).Decode(&author)
 	if err != nil {
 		return &model.Author{}, err
@@ -63,22 +57,17 @@ func (r *authorRepository) GetAuthorDetail(objectID interface{}) (*model.Author,
 	return &author, nil
 }
 
-func (r *authorRepository) InsertAuthor(author *model.AuthorWrite) (*model.Author, error) {
+func (r *authorRepository) InsertAuthor(author *model.AuthorWrite) (interface{}, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel()
 
 	collection := r.db.Client.Database("go-mongodb").Collection("author")
 	res, err := collection.InsertOne(ctx, author)
 	if err != nil {
-		return &model.Author{}, nil
+		return primitive.ObjectID{}, err
 	}
 
-	return &model.Author{
-		ID:        res.InsertedID,
-		FirstName: author.FirstName,
-		LastName:  author.LastName,
-		Address:   author.Address,
-	}, nil
+	return res.InsertedID, nil
 }
 
 func (r *authorRepository) UpdateAuthor(author *model.Author) error {
@@ -101,7 +90,8 @@ func (r *authorRepository) DeleteAuthor(objectID interface{}) error {
 
 	collection := r.db.Client.Database("go-mongodb").Collection("author")
 	filter := bson.M{"_id": objectID}
-	_, err := collection.DeleteOne(ctx, filter)
+	updateQuery := bson.D{{"$set", bson.D{{"is_deleted", true}}}}
+	_, err := collection.UpdateOne(ctx, filter, updateQuery)
 	if err != nil {
 		return err
 	}
